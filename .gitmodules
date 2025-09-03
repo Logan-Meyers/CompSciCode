@@ -1,3 +1,6 @@
 [submodule "122/PAs/SFML_PA_9"]
 	path = 122/PAs/SFML_PA_9
 	url = https://github.com/grayson-fougere/SFML_PA_9.git
+[submodule "223/pa1-linux-game-Logan-Meyers"]
+	path = 223/pa1-linux-game-Logan-Meyers
+	url = https://github.com/WSU-CPTS-223/pa1-linux-game-Logan-Meyers.git
