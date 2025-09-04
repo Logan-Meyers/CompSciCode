@@ -33,7 +33,7 @@ struct fibo_result measure_fibo(int n) {
 }
 
 int main() {
-    for (int n=0; n < 20; n++) {
+    for (int n=0; n < 45; n++) {
         struct fibo_result result = measure_fibo(n);
 
         std::cout << "Fibonacci of " << n << " is " << result.result << " | Took " << result.timeTaken << " seconds | And " << steps << " steps." << std::endl;
