@@ -10,3 +10,6 @@
 [submodule "pa3-inventory-management-Logan-Meyers"]
 	path = pa3-inventory-management-Logan-Meyers
 	url = https://github.com/WSU-CPTS-223/pa3-inventory-management-Logan-Meyers.git
+[submodule "223/pa3-inventory-management-Logan-Meyers"]
+	path = 223/pa3-inventory-management-Logan-Meyers
+	url = https://github.com/WSU-CPTS-223/pa3-inventory-management-Logan-Meyers.git
