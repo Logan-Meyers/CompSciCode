@@ -2,6 +2,7 @@
 #define HEAPPRIORITYQUEUE_H
 
 #include "PrinterJob.h"
+#include <cmath>  // for floor
 
 using namespace std;
 
