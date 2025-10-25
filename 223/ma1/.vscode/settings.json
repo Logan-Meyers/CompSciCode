@@ -1,0 +1,7 @@
+{
+    "triggerTaskOnSave.tasks": {
+        "C/C++: g++-11 build active file": [
+            "*.{c,h,cpp,hpp}", // <-- Glob pattern to specify which files should trigger the task
+        ],
+    }
+}

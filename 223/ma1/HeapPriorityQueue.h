@@ -8,11 +8,16 @@ using namespace std;
 class HeapPriorityQueue {
 private:
     static const int MAX_SIZE = 100; // Fixed-size array
-    PrinterJob heap[MAX_SIZE]; 
+    PrinterJob heap[MAX_SIZE];
     int size; // Track the number of elements in the heap
 
     void percolateUp(int index);
     void percolateDown(int index);
+
+    // index helpers
+    int getParent(int index);
+    int getLeft(int index);
+    int getRight(int index);
 
 public:
     HeapPriorityQueue(); // Constructor

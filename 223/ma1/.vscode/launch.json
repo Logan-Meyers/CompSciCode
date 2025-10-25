@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Launch",
+            "program": "${workspaceFolder}/main",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "preLaunchTask": "C/C++: g++-11 build active file"
+        }
+    ]
+}

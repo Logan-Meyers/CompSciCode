@@ -1,5 +1,5 @@
-#include "ListPriorityQueue.h"
-// #include "HeapPriorityQueue.h" // TODO: Uncomment when implementing HeapPriorityQueue
+// #include "ListPriorityQueue.h"
+#include "HeapPriorityQueue.h"
 
 #include <iostream>
 #include <sstream>
@@ -7,8 +7,8 @@
 using namespace std;
 
 int main() {
-    ListPriorityQueue queue; // List-based priority queue TODO: comment when HeapPriorityQueue is ready!
-    // HeapPriorityQueue queue; // TODO: Uncomment when HeapPriorityQueue is implemented
+    // ListPriorityQueue queue; // List-based priority queue TODO: comment when HeapPriorityQueue is ready!
+    HeapPriorityQueue queue; // TODO: Uncomment when HeapPriorityQueue is implemented
 
     string input;
 
