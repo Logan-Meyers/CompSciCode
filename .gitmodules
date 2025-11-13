@@ -16,3 +16,6 @@
 [submodule "223/ma2-sorting-algorithm-comparison-Logan-Meyers"]
 	path = 223/ma2
 	url = https://github.com/WSU-CPTS-223/ma2-sorting-algorithm-comparison-Logan-Meyers.git
+[submodule "223/pa4-entertainment-search-and-sort-Logan-Meyers"]
+	path = 223/pa4-entertainment-search-and-sort-Logan-Meyers
+	url = https://github.com/WSU-CPTS-223/pa4-entertainment-search-and-sort-Logan-Meyers.git
