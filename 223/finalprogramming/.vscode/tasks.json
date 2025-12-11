@@ -1,0 +1,11 @@
+{
+    "tasks": [
+        {
+            "type": "cppbuild",
+            "label": "C/C++: g++-11 build active file",
+            "command": "g++ -std=c++11 -g MinHeap.cpp",
+            "args": []
+        }
+    ],
+    "version": "2.0.0"
+}
