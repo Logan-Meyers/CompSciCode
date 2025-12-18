@@ -5,7 +5,7 @@
             "type": "lldb",
             "request": "launch",
             "name": "Launch",
-            "program": "${workspaceFolder}/a.out",
+            "program": "${workspaceFolder}/main",
             "args": [],
             "cwd": "${workspaceFolder}",
             "preLaunchTask": "C/C++: g++-11 build active file"
