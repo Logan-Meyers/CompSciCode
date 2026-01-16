@@ -1,0 +1,7 @@
+BEFORE EACH SUBMISSION: tag commits
+- `git tag HW0 HEAD` will tag the current commit
+
+`git tag --delete <tagname>` will delete a tag
+`git push --delete origin <tagname>` will delete a tag on the remote
+`git push` will push changes and commits as normal
+`git push origin tag <tagname>` will push the tag
