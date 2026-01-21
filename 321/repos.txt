@@ -1,0 +1,7 @@
+Links to main page:
+- HW: https://gitlab.eecs.wsu.edu/lmeyers/cpts321-logan_meyers-hws
+- Exercises: https://gitlab.eecs.wsu.edu/lmeyers/cpts321-logan_meyers-in-class-exercises
+
+Links for cloning (HTTPS):
+- HW: https://gitlab.eecs.wsu.edu/lmeyers/cpts321-logan_meyers-hws.git
+- Exercises: https://gitlab.eecs.wsu.edu/lmeyers/cpts321-logan_meyers-in-class-exercises.git
