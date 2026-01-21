@@ -22,3 +22,12 @@
 [submodule "223/ma3"]
 	path = 223/ma3
 	url = https://github.com/WSU-CPTS-223/ma3-shortest-path-comparison-Logan-Meyers.git
+[submodule "321/cpts321-logan_meyers-hws"]
+	path = 321/cpts321-logan_meyers-hws
+	url = git@gitlab-school:lmeyers/cpts321-logan_meyers-hws.git
+[submodule "321/hws"]
+	path = 321/hws
+	url = git@gitlab-school:lmeyers/cpts321-logan_meyers-hws.git
+[submodule "321/exercises"]
+	path = 321/exercises
+	url = git@gitlab-school:lmeyers/cpts321-logan_meyers-in-class-exercises.git
