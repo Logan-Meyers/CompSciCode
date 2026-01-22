@@ -31,3 +31,9 @@
 [submodule "321/exercises"]
 	path = 321/exercises
 	url = git@gitlab-school:lmeyers/cpts321-logan_meyers-in-class-exercises.git
+[submodule "CptS-122_SP26_LabSolutions_Logan-Meyers"]
+	path = CptS-122_SP26_LabSolutions_Logan-Meyers
+	url = git@github-personal:Logan-Meyers/CptS-122_SP26_LabSolutions_Logan-Meyers.git
+[submodule "TA122"]
+	path = TA122
+	url = git@github-personal:Logan-Meyers/CptS-122_SP26_LabSolutions_Logan-Meyers.git
