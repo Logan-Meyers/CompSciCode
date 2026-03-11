@@ -1,0 +1,8 @@
+Monopoly
+1. Board should create the squares
+2. Piece may have key which related it to a square, and monopoly game can use that to
+3. Monopoly game has play game so it is the controller
+4. The monopoly game reads dice roll, manages board and player
+5. monopoly game should be responsibly for handling the dice
+
+board is the information expert for squares, since it has all info about the squares and nothing else does
