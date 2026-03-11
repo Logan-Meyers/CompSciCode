@@ -33,10 +33,10 @@
 	url = git@gitlab-school:lmeyers/cpts321-logan_meyers-in-class-exercises.git
 [submodule "CptS-122_SP26_LabSolutions_Logan-Meyers"]
 	path = CptS-122_SP26_LabSolutions_Logan-Meyers
-	url = git@github-personal:Logan-Meyers/CptS-122_SP26_LabSolutions_Logan-Meyers.git
+	url = git@github.com:Logan-Meyers/CptS-122_SP26_LabSolutions_Logan-Meyers.git
 [submodule "TA122"]
 	path = TA122
-	url = git@github-personal:Logan-Meyers/CptS-122_SP26_LabSolutions_Logan-Meyers.git
+	url = git@github.com:Logan-Meyers/CptS-122_SP26_LabSolutions_Logan-Meyers.git
 [submodule "322-StatQuest"]
 	path = 322-StatQuest
-	url = git@github-personal:WSU-CPTS322-SP26/StatQuest
+	url = git@github.com:WSU-CPTS322-SP26/StatQuest
