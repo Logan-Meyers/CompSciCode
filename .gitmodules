@@ -1,27 +1,27 @@
 [submodule "122/PAs/SFML_PA_9"]
 	path = 122/PAs/SFML_PA_9
-	url = https://github.com/grayson-fougere/SFML_PA_9.git
+	url = git@github.com:grayson-fougere/SFML_PA_9.git
 [submodule "223/pa1-linux-game-Logan-Meyers"]
 	path = 223/pa1-linux-game-Logan-Meyers
-	url = https://github.com/WSU-CPTS-223/pa1-linux-game-Logan-Meyers.git
+	url = git@github.com:WSU-CPTS-223/pa1-linux-game-Logan-Meyers.git
 [submodule "223/pa2-avl-map-Logan-Meyers"]
 	path = 223/pa2-avl-map-Logan-Meyers
-	url = https://github.com/WSU-CPTS-223/pa2-avl-map-Logan-Meyers.git
+	url = git@github.com:WSU-CPTS-223/pa2-avl-map-Logan-Meyers.git
 [submodule "pa3-inventory-management-Logan-Meyers"]
 	path = pa3-inventory-management-Logan-Meyers
-	url = https://github.com/WSU-CPTS-223/pa3-inventory-management-Logan-Meyers.git
+	url = git@github.com:WSU-CPTS-223/pa3-inventory-management-Logan-Meyers.git
 [submodule "223/pa3-inventory-management-Logan-Meyers"]
 	path = 223/pa3-inventory-management-Logan-Meyers
-	url = https://github.com/WSU-CPTS-223/pa3-inventory-management-Logan-Meyers.git
+	url = git@github.com:WSU-CPTS-223/pa3-inventory-management-Logan-Meyers.git
 [submodule "223/ma2-sorting-algorithm-comparison-Logan-Meyers"]
 	path = 223/ma2
-	url = https://github.com/WSU-CPTS-223/ma2-sorting-algorithm-comparison-Logan-Meyers.git
+	url = git@github.com:WSU-CPTS-223/ma2-sorting-algorithm-comparison-Logan-Meyers.git
 [submodule "223/pa4-entertainment-search-and-sort-Logan-Meyers"]
 	path = 223/pa4-entertainment-search-and-sort-Logan-Meyers
-	url = https://github.com/WSU-CPTS-223/pa4-entertainment-search-and-sort-Logan-Meyers.git
+	url = git@github.com:WSU-CPTS-223/pa4-entertainment-search-and-sort-Logan-Meyers.git
 [submodule "223/ma3"]
 	path = 223/ma3
-	url = https://github.com/WSU-CPTS-223/ma3-shortest-path-comparison-Logan-Meyers.git
+	url = git@github.com:WSU-CPTS-223/ma3-shortest-path-comparison-Logan-Meyers.git
 [submodule "321/cpts321-logan_meyers-hws"]
 	path = 321/cpts321-logan_meyers-hws
 	url = git@gitlab-school:lmeyers/cpts321-logan_meyers-hws.git
