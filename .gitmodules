@@ -40,3 +40,6 @@
 [submodule "322-StatQuest"]
 	path = 322-StatQuest
 	url = git@github.com:WSU-CPTS322-SP26/StatQuest
+[submodule "422/JTL"]
+	path = 422/JTL
+	url = git@github.com:jayrencalub/JTL.git
