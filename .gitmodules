@@ -43,3 +43,6 @@
 [submodule "422/JTL"]
 	path = 422/JTL
 	url = git@github.com:jayrencalub/JTL.git
+[submodule "TA121"]
+	path = TA121
+	url = git@github.com:Logan-Meyers/CptS-121_FA26_LabSolutions.git
