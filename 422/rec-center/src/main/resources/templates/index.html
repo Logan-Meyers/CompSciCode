@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Palouse Rec Center: Front Desk</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; margin: 2rem auto; max-width: 960px; color: #222; }
+        h1 { color: #981e32; margin-bottom: 0.2rem; }
+        .subtitle { color: #555; margin-top: 0; }
+        form { display: grid; grid-template-columns: 160px 1fr; gap: 0.6rem 1rem; align-items: center;
+               background: #f6f6f6; padding: 1.2rem; border-radius: 6px; max-width: 560px; }
+        input, select { padding: 0.35rem; font-size: 1rem; }
+        .hint { color: #666; font-size: 0.85rem; }
+        button { grid-column: 2; justify-self: start; padding: 0.5rem 1.4rem; font-size: 1rem;
+                 background: #981e32; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .error { background: #fde8e8; color: #8a1c1c; border: 1px solid #e0a0a0; padding: 0.6rem 1rem; border-radius: 4px; max-width: 560px; }
+        .message { background: #e7f5e9; color: #1e5b2a; border: 1px solid #9ccfa5; padding: 0.6rem 1rem; border-radius: 4px; max-width: 560px; }
+        table { border-collapse: collapse; width: 100%; margin-top: 0.8rem; }
+        th, td { border: 1px solid #ccc; padding: 0.4rem 0.6rem; text-align: left; }
+        th { background: #5e6a71; color: white; }
+        td.money { text-align: right; }
+    </style>
+</head>
+<body>
+<h1>Palouse Rec Center</h1>
+<p class="subtitle">Front desk membership payments</p>
+
+<p class="message" th:if="${message}" th:text="${message}">Payment recorded.</p>
+<p class="error" th:if="${error}" th:text="${error}">Something went wrong.</p>
+
+<form th:action="@{/payments}" th:object="${paymentRequest}" method="post">
+    <label for="memberName">Member name</label>
+    <input id="memberName" type="text" th:field="*{memberName}" required>
+
+    <label for="age">Age</label>
+    <input id="age" type="number" th:field="*{age}">
+
+    <label for="state">State</label>
+    <select id="state" th:field="*{state}">
+        <option th:each="s : ${states}" th:value="${s}" th:text="${s}">WA</option>
+    </select>
+
+    <label for="plan">Plan</label>
+    <select id="plan" th:field="*{plan}">
+        <option th:each="p : ${plans}" th:value="${p}" th:text="${p.label}">Monthly</option>
+    </select>
+
+    <label for="method">Payment method</label>
+    <select id="method" th:field="*{method}">
+        <option th:each="m : ${methods}" th:value="${m}" th:text="${m.label}">Cash</option>
+    </select>
+
+    <label for="cardNumber">Card number</label>
+    <div>
+        <input id="cardNumber" type="text" th:field="*{cardNumber}" size="22">
+        <div class="hint">Card payments only</div>
+    </div>
+
+    <button type="submit">Record payment</button>
+</form>
+
+<h2>Payment history</h2>
+<p th:if="${#lists.isEmpty(payments)}">No payments yet.</p>
+<table th:unless="${#lists.isEmpty(payments)}">
+    <caption hidden>Payment history</caption>
+    <thead>
+    <tr>
+        <th scope="col">Receipt #</th>
+        <th scope="col">Name</th>
+        <th scope="col">Plan</th>
+        <th scope="col">Base fee</th>
+        <th scope="col">Discount</th>
+        <th scope="col">Amount paid</th>
+        <th scope="col">Method</th>
+        <th scope="col">Date paid</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="p : ${payments}">
+        <td th:text="${p.receiptNumber}">1</td>
+        <td th:text="${p.memberName}">Name</td>
+        <td th:text="${p.plan.label}">Monthly</td>
+        <td class="money" th:text="'$' + ${#numbers.formatDecimal(p.baseFeeCents / 100.0, 1, 'COMMA', 2, 'POINT')}">$40.00</td>
+        <td class="money" th:text="'$' + ${#numbers.formatDecimal(p.discountCents / 100.0, 1, 'COMMA', 2, 'POINT')}">$4.00</td>
+        <td class="money" th:text="'$' + ${#numbers.formatDecimal(p.amountPaidCents / 100.0, 1, 'COMMA', 2, 'POINT')}">$36.00</td>
+        <td th:text="${p.method.label}">Cash</td>
+        <td th:text="${p.datePaid}">2026-10-15</td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
