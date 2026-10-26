@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -g
 
 scheduler: scheduler.c
-	$(CC) scheduler.c -o scheduler
+	$(CC) $(CFLAGS) scheduler.c -o scheduler
 
 test01:
 	./scheduler sample_io/input/input-1

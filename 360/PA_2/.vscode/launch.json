@@ -1,0 +1,29 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug (CodeLLDB)",
+            // The target is chosen by .vscode/debug-target.sh after building,
+            // so nothing here needs to change between projects.
+            "targetCreateCommands": ["command source ${workspaceFolder}/.vscode/.debug-target.lldb"],
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "terminal": "integrated",
+            "preLaunchTask": "Build for debug"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug make target (CodeLLDB)",
+            // Prompts for a Makefile target (e.g. test01) and debugs the program
+            // with the same arguments that target passes. "args" is left out on
+            // purpose: even an empty list would replace the target's arguments.
+            "targetCreateCommands": ["command source ${workspaceFolder}/.vscode/.debug-target.lldb"],
+            "cwd": "${workspaceFolder}",
+            "terminal": "integrated",
+            "preLaunchTask": "Build for debug (make target)"
+        }
+    ]
+}

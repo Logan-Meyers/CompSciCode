@@ -1,0 +1,2 @@
+target create "/Users/lsm03/Documents/Programming2/College/CompSciCode/360/PA_2/scheduler"
+settings set target.run-args "sample_io/input/input-4"

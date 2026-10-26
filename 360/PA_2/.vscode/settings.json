@@ -1,0 +1,23 @@
+{
+    // ---- Per-project settings: these are the only lines you should need to edit ----
+    // Command used to build the project (on save and before debugging)
+    "project.buildCommand": "make",
+    // Executable to debug, relative to the workspace. Leave empty to auto-detect
+    // (the most recently built executable in the project is used).
+    "project.program": "",
+
+    "triggerTaskOnSave.tasks": {
+        "Build": [
+            "*.{c,h,cpp,hpp}", // <-- Glob pattern to specify which files should trigger the task
+        ],
+    },
+
+    // Hide the C/C++ extension's "Run/Debug C/C++ File" play button, which
+    // compiles only the active file and ignores CodeLLDB. Use F5 instead.
+    "C_Cpp.debugShortcut": false,
+
+    "files.exclude": {
+        "**/*.dSYM": true,
+        ".vscode/.debug-target.lldb": true
+    }
+}

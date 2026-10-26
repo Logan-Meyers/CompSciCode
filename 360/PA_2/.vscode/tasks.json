@@ -1,0 +1,38 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build",
+            "type": "shell",
+            "command": "${config:project.buildCommand}",
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": "$gcc",
+            "group": { "kind": "build", "isDefault": true },
+            "presentation": { "reveal": "silent", "clear": true }
+        },
+        {
+            "label": "Build for debug",
+            "type": "shell",
+            "command": "${config:project.buildCommand} && sh .vscode/debug-target.sh '${config:project.program}'",
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": "$gcc",
+            "presentation": { "reveal": "silent", "clear": true }
+        },
+        {
+            "label": "Build for debug (make target)",
+            "type": "shell",
+            "command": "${config:project.buildCommand} && sh .vscode/debug-target.sh '${config:project.program}' '${input:makeTarget}'",
+            "options": { "cwd": "${workspaceFolder}" },
+            "problemMatcher": "$gcc",
+            "presentation": { "reveal": "silent", "clear": true }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "makeTarget",
+            "type": "promptString",
+            "description": "Make target that runs the program (e.g. test01)",
+            "default": "test01"
+        }
+    ]
+}
