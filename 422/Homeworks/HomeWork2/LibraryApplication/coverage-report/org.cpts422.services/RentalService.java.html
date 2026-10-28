@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RentalService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">All in LibraryApplication Coverage Results</a> &gt; <a href="index.source.html" class="el_package">org.cpts422.services</a> &gt; <span class="el_source">RentalService.java</span></div><h1>RentalService.java</h1><pre class="source lang-java linenums">package org.cpts422.services;
+
+import org.cpts422.exceptions.BookNotFoundException;
+import org.cpts422.exceptions.RentalNotAllowedException;
+import org.cpts422.exceptions.UserNotFoundException;
+import org.cpts422.models.Book;
+import org.cpts422.models.BookCategory;
+import org.cpts422.models.MembershipType;
+import org.cpts422.models.User;
+import org.cpts422.repositories.BookRepository;
+import org.cpts422.repositories.UserRepository;
+
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
+
+public class RentalService {
+    private static final int MAX_LATE_FEE_CENTS = 2000;
+
+    private final BookRepository bookRepository;
+    private final UserRepository userRepository;
+    private final PaymentService paymentService;
+    private final DateProvider dateProvider;
+
+    public RentalService(BookRepository bookRepository, UserRepository userRepository,
+<span class="fc" id="L25">                         PaymentService paymentService, DateProvider dateProvider) {</span>
+<span class="fc" id="L26">        this.bookRepository = bookRepository;</span>
+<span class="fc" id="L27">        this.userRepository = userRepository;</span>
+<span class="fc" id="L28">        this.paymentService = paymentService;</span>
+<span class="fc" id="L29">        this.dateProvider = dateProvider;</span>
+<span class="fc" id="L30">    }</span>
+
+    /**
+     * Rents a book to a user and returns the due date.
+     */
+    public LocalDate rentBook(int userId, String bookTitle) {
+<span class="fc" id="L36">        User user = findUserOrThrow(userRepository, userId);</span>
+<span class="fc" id="L37">        Book book = findBookOrThrow(bookRepository, bookTitle, &quot;Book &quot; + bookTitle + &quot; not found&quot;);</span>
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (book.category() == BookCategory.REFERENCE) {</span>
+<span class="fc" id="L39">            throw new RentalNotAllowedException(&quot;Reference books cannot leave the library&quot;);</span>
+        }
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        if (!book.available()) {</span>
+<span class="fc" id="L42">            throw new RentalNotAllowedException(&quot;Book &quot; + bookTitle + &quot; is already rented&quot;);</span>
+        }
+
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        if (paymentService.getOutstandingBalance(user) &gt; 0) {</span>
+<span class="fc" id="L46">            throw new RentalNotAllowedException(user.name() + &quot; has unpaid late fees&quot;);</span>
+        }
+
+        int rentalLimit;
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        if (user.membership() == MembershipType.FACULTY) {</span>
+<span class="fc" id="L51">            rentalLimit = 10;</span>
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        } else if (user.membership() == MembershipType.STUDENT) {</span>
+<span class="fc" id="L53">            rentalLimit = 5;</span>
+        } else {
+<span class="fc" id="L55">            rentalLimit = 2;</span>
+        }
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (bookRepository.countBooksRentedBy(user) &gt;= rentalLimit) {</span>
+<span class="fc" id="L58">            throw new RentalNotAllowedException(user.name() + &quot; has reached the rental limit&quot;);</span>
+        }
+
+        int loanDays;
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        if (book.category() == BookCategory.NEW_RELEASE) {</span>
+<span class="fc" id="L63">            loanDays = 7;</span>
+        } else {
+<span class="fc" id="L65">            loanDays = 21;</span>
+        }
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        if (user.membership() == MembershipType.FACULTY) {</span>
+<span class="fc" id="L68">            loanDays = loanDays * 2;</span>
+        }
+
+<span class="fc" id="L71">        LocalDate dueDate = dateProvider.today().plusDays(loanDays);</span>
+<span class="fc" id="L72">        Book rentedBook = book.rentTo(user, dueDate);</span>
+<span class="fc" id="L73">        bookRepository.updateBook(rentedBook);</span>
+<span class="fc" id="L74">        bookRepository.addBookToUser(user, rentedBook);</span>
+<span class="fc" id="L75">        System.out.println(&quot;Book rented successfully to &quot; + user.name() + &quot;, due &quot; + dueDate);</span>
+<span class="fc" id="L76">        return dueDate;</span>
+    }
+
+    /**
+     * Returns a rented book, charges any late fee, and returns the fee in cents.
+     */
+    public int returnBook(int userId, String bookTitle) {
+<span class="fc" id="L83">        User user = findUserOrThrow(userRepository, userId);</span>
+
+        // A missing book and a book rented by someone else get the same message on purpose,
+        // so the error doesn't reveal who has a book.
+<span class="fc" id="L87">        String notRentedMessage = &quot;Book &quot; + bookTitle + &quot; was not rented by user &quot; + user.name();</span>
+<span class="fc" id="L88">        Book book = findBookOrThrow(bookRepository, bookTitle, notRentedMessage);</span>
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        if (!user.equals(book.currentUser())) {</span>
+<span class="fc" id="L90">            throw new BookNotFoundException(notRentedMessage);</span>
+        }
+
+<span class="fc" id="L93">        int lateFee = calculateLateFee(book, user, dateProvider.today());</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">        if (lateFee &gt; 0) {</span>
+<span class="fc" id="L95">            paymentService.chargeLateFee(user, lateFee);</span>
+        }
+
+<span class="fc" id="L98">        Book returnedBook = book.returnToShelf();</span>
+<span class="fc" id="L99">        bookRepository.updateBook(returnedBook);</span>
+<span class="fc" id="L100">        bookRepository.removeBookFromUser(user, returnedBook);</span>
+<span class="fc" id="L101">        System.out.println(&quot;Book returned successfully by &quot; + user.name() + &quot;, late fee &quot; + lateFee + &quot; cents&quot;);</span>
+<span class="fc" id="L102">        return lateFee;</span>
+    }
+
+    /**
+     * Calculates the late fee in cents for returning the given book on returnDate.
+     */
+    public int calculateLateFee(Book book, User user, LocalDate returnDate) {
+<span class="fc bfc" id="L109" title="All 4 branches covered.">        if (book.dueDate() == null || !returnDate.isAfter(book.dueDate())) {</span>
+<span class="fc" id="L110">            return 0;</span>
+        }
+
+<span class="fc" id="L113">        long daysLate = ChronoUnit.DAYS.between(book.dueDate(), returnDate);</span>
+
+<span class="fc" id="L115">        int dailyRateCents = dailyRateCents(book, user);</span>
+
+        int graceDays;
+<span class="fc bfc" id="L118" title="All 2 branches covered.">        if (user.membership() == MembershipType.FACULTY) {</span>
+<span class="fc" id="L119">            graceDays = 7;</span>
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        } else if (user.membership() == MembershipType.STUDENT) {</span>
+<span class="fc" id="L121">            graceDays = 2;</span>
+        } else {
+<span class="fc" id="L123">            graceDays = 0;</span>
+        }
+
+<span class="fc" id="L126">        long chargeableDays = daysLate - graceDays;</span>
+<span class="fc bfc" id="L127" title="All 2 branches covered.">        if (chargeableDays &lt;= 0) {</span>
+<span class="fc" id="L128">            return 0;</span>
+        }
+
+<span class="fc" id="L131">        long fee = chargeableDays * dailyRateCents;</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (fee &gt; MAX_LATE_FEE_CENTS) {</span>
+<span class="fc" id="L133">            fee = MAX_LATE_FEE_CENTS;</span>
+        }
+<span class="fc" id="L135">        return (int) fee;</span>
+    }
+
+    // The lookup-and-throw checks below are pulled out of the public methods to lower their
+    // cyclomatic complexity. They are static because they only use their arguments, not
+    // instance state, and private because they are implementation details of this service.
+
+    private static User findUserOrThrow(UserRepository userRepository, int userId) {
+<span class="fc" id="L143">        User user = userRepository.findUserById(userId);</span>
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        if (user == null) {</span>
+<span class="fc" id="L145">            throw new UserNotFoundException(&quot;User with ID &quot; + userId + &quot; not found&quot;);</span>
+        }
+<span class="fc" id="L147">        return user;</span>
+    }
+
+    // The message is a parameter because rentBook and returnBook report a missing book differently.
+    private static Book findBookOrThrow(BookRepository bookRepository, String bookTitle, String message) {
+<span class="fc" id="L152">        Book book = bookRepository.findBookByTitle(bookTitle);</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">        if (book == null) {</span>
+<span class="fc" id="L154">            throw new BookNotFoundException(message);</span>
+        }
+<span class="fc" id="L156">        return book;</span>
+    }
+
+    // Pulling the rate table out of calculateLateFee removes its nested category/membership
+    // branches, leaving that method with just the due-date, grace-period and cap logic.
+    private static int dailyRateCents(Book book, User user) {
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (book.category() == BookCategory.NEW_RELEASE) {</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">            if (user.membership() == MembershipType.FACULTY) {</span>
+<span class="fc" id="L164">                return 25;</span>
+<span class="fc bfc" id="L165" title="All 2 branches covered.">            } else if (user.membership() == MembershipType.STUDENT) {</span>
+<span class="fc" id="L166">                return 50;</span>
+            }
+<span class="fc" id="L168">            return 100;</span>
+        }
+<span class="fc bfc" id="L170" title="All 2 branches covered.">        if (user.membership() == MembershipType.FACULTY) {</span>
+<span class="fc" id="L171">            return 10;</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">        } else if (user.membership() == MembershipType.STUDENT) {</span>
+<span class="fc" id="L173">            return 25;</span>
+        }
+<span class="fc" id="L175">        return 50;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

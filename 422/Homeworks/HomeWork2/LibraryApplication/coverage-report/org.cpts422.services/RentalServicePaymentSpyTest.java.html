@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>RentalServicePaymentSpyTest.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">All in LibraryApplication Coverage Results</a> &gt; <a href="index.source.html" class="el_package">org.cpts422.services</a> &gt; <span class="el_source">RentalServicePaymentSpyTest.java</span></div><h1>RentalServicePaymentSpyTest.java</h1><pre class="source lang-java linenums">package org.cpts422.services;
+
+import org.cpts422.exceptions.RentalNotAllowedException;
+import org.cpts422.models.Book;
+import org.cpts422.models.BookCategory;
+import org.cpts422.models.MembershipType;
+import org.cpts422.models.User;
+import org.cpts422.repositories.BookRepository;
+import org.cpts422.repositories.UserRepository;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDate;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(MockitoExtension.class)
+<span class="fc" id="L26">class RentalServicePaymentSpyTest {</span>
+
+<span class="fc" id="L28">    private static final LocalDate TODAY = LocalDate.of(2026, 1, 1);</span>
+    private static final String LATE_TITLE = &quot;Effective Java&quot;;
+    private static final String SECOND_TITLE = &quot;Clean Code&quot;;
+
+    @Mock private BookRepository bookRepository;
+    @Mock private UserRepository userRepository;
+    @Mock private DateProvider dateProvider;
+
+    // Real payment service wrapped in a spy so its balance map persists between calls
+<span class="fc" id="L37">    @Spy private InMemoryPaymentService paymentService = new InMemoryPaymentService();</span>
+
+    @InjectMocks private RentalService rentalService;
+
+    @Test
+    @DisplayName(&quot;A late fee from a returned book blocks the same user from renting another book&quot;)
+    void lateReturnFeeBlocksSubsequentRental() {
+        // Setup: faculty member returns a regular book 12 days late =&gt; (12 - 7 grace) * 10 = 50 cents
+<span class="fc" id="L45">        User user = new User(&quot;Alice&quot;, 1, MembershipType.FACULTY);</span>
+<span class="fc" id="L46">        Book lateBook = new Book(LATE_TITLE, &quot;Joshua Bloch&quot;, BookCategory.REGULAR)</span>
+<span class="fc" id="L47">                .rentTo(user, TODAY.minusDays(12));</span>
+<span class="fc" id="L48">        Book secondBook = new Book(SECOND_TITLE, &quot;Robert Martin&quot;, BookCategory.REGULAR);</span>
+<span class="fc" id="L49">        when(userRepository.findUserById(1)).thenReturn(user);</span>
+<span class="fc" id="L50">        when(bookRepository.findBookByTitle(LATE_TITLE)).thenReturn(lateBook);</span>
+<span class="fc" id="L51">        when(bookRepository.findBookByTitle(SECOND_TITLE)).thenReturn(secondBook);</span>
+<span class="fc" id="L52">        when(dateProvider.today()).thenReturn(TODAY);</span>
+
+        // Act: return the late book
+<span class="fc" id="L55">        int fee = rentalService.returnBook(1, LATE_TITLE);</span>
+
+        // Assert: the fee was charged through the spy and is stored as a real balance
+<span class="fc" id="L58">        assertEquals(50, fee);</span>
+<span class="fc" id="L59">        verify(paymentService).chargeLateFee(user, 50);</span>
+<span class="fc" id="L60">        assertEquals(50, paymentService.getOutstandingBalance(user));</span>
+
+        // Act/Assert: the real balance now blocks the next rental
+<span class="fc" id="L63">        RentalNotAllowedException ex = assertThrows(RentalNotAllowedException.class,</span>
+<span class="nc" id="L64">                () -&gt; rentalService.rentBook(1, SECOND_TITLE));</span>
+<span class="fc" id="L65">        assertEquals(&quot;Alice has unpaid late fees&quot;, ex.getMessage());</span>
+
+        // Verify: the balance was checked by the rental (once above in the assert, once by the service),
+        // and the only book update was the earlier return
+<span class="fc" id="L69">        verify(paymentService, atLeastOnce()).getOutstandingBalance(user);</span>
+<span class="fc" id="L70">        verify(bookRepository, times(1)).updateBook(any());</span>
+<span class="fc" id="L71">        verify(bookRepository, never()).addBookToUser(any(), any());</span>
+<span class="fc" id="L72">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

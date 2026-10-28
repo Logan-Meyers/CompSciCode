@@ -33,15 +33,8 @@ public class RentalService {
      * Rents a book to a user and returns the due date.
      */
     public LocalDate rentBook(int userId, String bookTitle) {
-        User user = userRepository.findUserById(userId);
-        if (user == null) {
-            throw new UserNotFoundException("User with ID " + userId + " not found");
-        }
-
-        Book book = bookRepository.findBookByTitle(bookTitle);
-        if (book == null) {
-            throw new BookNotFoundException("Book " + bookTitle + " not found");
-        }
+        User user = findUserOrThrow(userRepository, userId);
+        Book book = findBookOrThrow(bookRepository, bookTitle, "Book " + bookTitle + " not found");
         if (book.category() == BookCategory.REFERENCE) {
             throw new RentalNotAllowedException("Reference books cannot leave the library");
         }
@@ -87,14 +80,14 @@ public class RentalService {
      * Returns a rented book, charges any late fee, and returns the fee in cents.
      */
     public int returnBook(int userId, String bookTitle) {
-        User user = userRepository.findUserById(userId);
-        if (user == null) {
-            throw new UserNotFoundException("User with ID " + userId + " not found");
-        }
+        User user = findUserOrThrow(userRepository, userId);
 
-        Book book = bookRepository.findBookByTitle(bookTitle);
-        if (book == null || !user.equals(book.currentUser())) {
-            throw new BookNotFoundException("Book " + bookTitle + " was not rented by user " + user.name());
+        // A missing book and a book rented by someone else get the same message on purpose,
+        // so the error doesn't reveal who has a book.
+        String notRentedMessage = "Book " + bookTitle + " was not rented by user " + user.name();
+        Book book = findBookOrThrow(bookRepository, bookTitle, notRentedMessage);
+        if (!user.equals(book.currentUser())) {
+            throw new BookNotFoundException(notRentedMessage);
         }
 
         int lateFee = calculateLateFee(book, user, dateProvider.today());
@@ -119,24 +112,7 @@ public class RentalService {
 
         long daysLate = ChronoUnit.DAYS.between(book.dueDate(), returnDate);
 
-        int dailyRateCents;
-        if (book.category() == BookCategory.NEW_RELEASE) {
-            if (user.membership() == MembershipType.FACULTY) {
-                dailyRateCents = 25;
-            } else if (user.membership() == MembershipType.STUDENT) {
-                dailyRateCents = 50;
-            } else {
-                dailyRateCents = 100;
-            }
-        } else {
-            if (user.membership() == MembershipType.FACULTY) {
-                dailyRateCents = 10;
-            } else if (user.membership() == MembershipType.STUDENT) {
-                dailyRateCents = 25;
-            } else {
-                dailyRateCents = 50;
-            }
-        }
+        int dailyRateCents = dailyRateCents(book, user);
 
         int graceDays;
         if (user.membership() == MembershipType.FACULTY) {
@@ -157,5 +133,45 @@ public class RentalService {
             fee = MAX_LATE_FEE_CENTS;
         }
         return (int) fee;
+    }
+
+    // The lookup-and-throw checks below are pulled out of the public methods to lower their
+    // cyclomatic complexity. They are static because they only use their arguments, not
+    // instance state, and private because they are implementation details of this service.
+
+    private static User findUserOrThrow(UserRepository userRepository, int userId) {
+        User user = userRepository.findUserById(userId);
+        if (user == null) {
+            throw new UserNotFoundException("User with ID " + userId + " not found");
+        }
+        return user;
+    }
+
+    // The message is a parameter because rentBook and returnBook report a missing book differently.
+    private static Book findBookOrThrow(BookRepository bookRepository, String bookTitle, String message) {
+        Book book = bookRepository.findBookByTitle(bookTitle);
+        if (book == null) {
+            throw new BookNotFoundException(message);
+        }
+        return book;
+    }
+
+    // Pulling the rate table out of calculateLateFee removes its nested category/membership
+    // branches, leaving that method with just the due-date, grace-period and cap logic.
+    private static int dailyRateCents(Book book, User user) {
+        if (book.category() == BookCategory.NEW_RELEASE) {
+            if (user.membership() == MembershipType.FACULTY) {
+                return 25;
+            } else if (user.membership() == MembershipType.STUDENT) {
+                return 50;
+            }
+            return 100;
+        }
+        if (user.membership() == MembershipType.FACULTY) {
+            return 10;
+        } else if (user.membership() == MembershipType.STUDENT) {
+            return 25;
+        }
+        return 50;
     }
 }
