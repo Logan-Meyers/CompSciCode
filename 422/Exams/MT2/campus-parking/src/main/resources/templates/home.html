@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Campus Parking</title>
+    <th:block th:replace="~{fragments :: styles}"></th:block>
+</head>
+<body>
+<nav th:replace="~{fragments :: nav}"></nav>
+<h1 id="home-title">Campus Parking Permits</h1>
+<div th:replace="~{fragments :: messages}"></div>
+<table id="users-table">
+    <thead>
+    <tr><th>Name</th><th>Type</th><th>License plate</th></tr>
+    </thead>
+    <tbody>
+    <tr th:each="u : ${users}" th:id="'user-row-' + ${u.id}">
+        <td><a th:id="'user-link-' + ${u.id}" th:href="@{/users/{id}(id=${u.id})}" th:text="${u.name}"></a></td>
+        <td th:text="${u.type}"></td>
+        <td th:text="${u.licensePlate}"></td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>

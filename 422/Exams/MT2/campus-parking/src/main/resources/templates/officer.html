@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Officer</title>
+    <th:block th:replace="~{fragments :: styles}"></th:block>
+</head>
+<body>
+<nav th:replace="~{fragments :: nav}"></nav>
+<h1 id="officer-title">Issue a citation</h1>
+<div th:replace="~{fragments :: messages}"></div>
+<form id="officer-form" method="post" th:action="@{/officer/citations}">
+    <label for="license-plate-input">License plate</label>
+    <input id="license-plate-input" name="licensePlate" type="text" required>
+    <button id="issue-citation-button" type="submit">Issue citation</button>
+</form>
+</body>
+</html>

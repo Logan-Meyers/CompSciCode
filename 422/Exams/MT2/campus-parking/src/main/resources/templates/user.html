@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>User</title>
+    <th:block th:replace="~{fragments :: styles}"></th:block>
+</head>
+<body>
+<nav th:replace="~{fragments :: nav}"></nav>
+<h1 id="user-name" th:text="${user.name}"></h1>
+<div th:replace="~{fragments :: messages}"></div>
+<p>Type: <span id="user-type" th:text="${user.type}"></span></p>
+<p>License plate: <span id="user-plate" th:text="${user.licensePlate}"></span></p>
+
+<h2>Permit</h2>
+<table id="permit-table" th:if="${permit != null}">
+    <thead>
+    <tr><th>Zone</th><th>Price paid</th><th>Purchased</th></tr>
+    </thead>
+    <tbody>
+    <tr th:id="'permit-row-' + ${permit.id}">
+        <td id="permit-zone" th:text="${permit.zone}"></td>
+        <td id="permit-price" th:text="'$' + ${#numbers.formatDecimal(permit.pricePaidCents / 100.0, 1, 'COMMA', 2, 'POINT')}"></td>
+        <td id="permit-date" th:text="${permit.purchaseDate}"></td>
+    </tr>
+    </tbody>
+</table>
+<p id="no-permit" th:if="${permit == null}">No permit.</p>
+
+<form id="purchase-permit-form" method="post" th:action="@{/users/{id}/permits(id=${user.id})}">
+    <label for="zone-select">Zone</label>
+    <select id="zone-select" name="zone">
+        <option th:each="z : ${zones}" th:value="${z}" th:text="${z}"></option>
+    </select>
+    <button id="buy-permit-button" type="submit">Buy permit</button>
+</form>
+
+<h2>Citations</h2>
+<table id="citations-table" th:if="${!citations.isEmpty()}">
+    <thead>
+    <tr><th>Issued</th><th>Fine</th><th>Status</th><th></th></tr>
+    </thead>
+    <tbody>
+    <tr th:each="c : ${citations}" th:id="'citation-row-' + ${c.id}">
+        <td th:text="${c.issuedDate}"></td>
+        <td th:text="'$' + ${#numbers.formatDecimal(c.fineCents / 100.0, 1, 'COMMA', 2, 'POINT')}"></td>
+        <td th:id="'citation-status-' + ${c.id}" th:text="${c.paid} ? 'Paid' : 'Unpaid'"></td>
+        <td>
+            <form th:if="${!c.paid}" th:id="'pay-form-' + ${c.id}" method="post"
+                  th:action="@{/users/{userId}/citations/{citationId}/pay(userId=${user.id},citationId=${c.id})}">
+                <button th:id="'pay-citation-' + ${c.id}" type="submit">Pay</button>
+            </form>
+        </td>
+    </tr>
+    </tbody>
+</table>
+<p id="no-citations" th:if="${citations.isEmpty()}">No citations.</p>
+</body>
+</html>
