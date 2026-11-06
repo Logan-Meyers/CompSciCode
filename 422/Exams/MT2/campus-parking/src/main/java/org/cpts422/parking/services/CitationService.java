@@ -49,8 +49,7 @@ public class CitationService {
 
         Citation previous = null;
         for (Citation citation : citationRepository.findByUserId(userId)) {
-            if (!citation.isPaid()
-                    && (previous == null || citation.getIssuedDate().isAfter(previous.getIssuedDate()))) {
+            if (previous == null || citation.getIssuedDate().isAfter(previous.getIssuedDate())) {
                 previous = citation;
             }
         }
@@ -60,7 +59,7 @@ public class CitationService {
             fine = 2500;
         } else {
             long days = ChronoUnit.DAYS.between(previous.getIssuedDate(), today);
-            if (days >= 15) {
+            if (days > 15) {
                 fine = 2500;
             } else if (previous.getFineCents() == 2500) {
                 fine = 5000;
@@ -83,7 +82,7 @@ public class CitationService {
         if (citation.isPaid()) {
             throw new CitationAlreadyPaidException("R9: citation " + citationId + " is already paid");
         }
-        if (!paymentGateway.charge(citationId, citation.getFineCents())) {
+        if (!paymentGateway.charge(citation.getUser().getId(), citation.getFineCents())) {
             throw new PaymentDeclinedException("R9: charge of " + citation.getFineCents()
                     + " cents declined for citation " + citationId);
         }

@@ -50,27 +50,10 @@ public class PermitService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("R4: user not found: id " + userId));
 
-        int price;
-        if (user.getType() == UserType.STUDENT && zone == Zone.GREEN) {
-            price = 6000;
-        } else if (user.getType() == UserType.STUDENT && zone == Zone.BLUE) {
-            price = 18000;
-        } else if (user.getType() == UserType.EMPLOYEE && zone == Zone.GREEN) {
-            price = 6000;
-        } else if (user.getType() == UserType.EMPLOYEE && zone == Zone.RED) {
-            price = 24000;
-        } else {
-            throw new PermitNotAllowedException(
-                    "R1: zone " + zone + " is not allowed for " + user.getType() + " (user " + userId + ")");
-        }
+        int price = priceForOrThrow(user, userId, zone);
 
         if (!permitRepository.findByUserId(userId).isEmpty()) {
             throw new PermitNotAllowedException("R2: user " + userId + " already holds a permit");
-        }
-
-        if (!paymentGateway.charge(userId, price)) {
-            throw new PaymentDeclinedException(
-                    "R5: charge of " + price + " cents declined for user " + userId);
         }
 
         for (Citation citation : citationRepository.findByUserId(userId)) {
@@ -80,9 +63,29 @@ public class PermitService {
             }
         }
 
+        if (!paymentGateway.charge(userId, price)) {
+            throw new PaymentDeclinedException(
+                    "R5: charge of " + price + " cents declined for user " + userId);
+        }
+
         Permit permit = permitRepository.save(new Permit(user, zone, price, dateProvider.today()));
         notificationService.sendPurchaseConfirmation(user, permit);
         return permit;
+    }
+
+    /** Applies R1: returns the fixed price in cents for the user's type and the zone, or throws if the zone isn't allowed. */
+    private int priceForOrThrow(User user, Long userId, Zone zone) {
+        if (user.getType() == UserType.STUDENT && zone == Zone.GREEN) {
+            return 6000;
+        } else if (user.getType() == UserType.STUDENT && zone == Zone.BLUE) {
+            return 18000;
+        } else if (user.getType() == UserType.EMPLOYEE && zone == Zone.GREEN) {
+            return 9000;
+        } else if (user.getType() == UserType.EMPLOYEE && zone == Zone.RED) {
+            return 24000;
+        }
+        throw new PermitNotAllowedException(
+                "R1: zone " + zone + " is not allowed for " + user.getType() + " (user " + userId + ")");
     }
 
     /** Returns the user's permit, if any. */

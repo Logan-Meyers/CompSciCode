@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>UserServiceTests.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Whole project Coverage Results</a> &gt; <a href="index.source.html" class="el_package">org.cpts422.parking</a> &gt; <span class="el_source">UserServiceTests.java</span></div><h1>UserServiceTests.java</h1><pre class="source lang-java linenums">package org.cpts422.parking;
+
+import org.cpts422.parking.entities.User;
+import org.cpts422.parking.entities.UserType;
+import org.cpts422.parking.exceptions.UserNotFoundException;
+import org.cpts422.parking.repositories.UserRepository;
+import org.cpts422.parking.services.UserService;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+<span class="fc" id="L24">public class UserServiceTests {</span>
+
+    private static final long USER_ID = 1L;
+    private static final String PLATE = &quot;BOB-123&quot;;
+
+    @Mock private UserRepository userRepository;
+
+    @InjectMocks private UserService userService;
+
+    /* ---------- R10 - Finding User ---------- */
+
+    @Test
+    @DisplayName(&quot;R10 - Trying to get a list of users with an empty database should return an empty list&quot;)
+    void R10_getUsersForEmptyShouldReturnEmptyList() {
+<span class="fc" id="L38">        when(userRepository.findAll()).thenReturn(List.of());</span>
+
+<span class="fc" id="L40">        assertTrue(userService.getAllUsers().isEmpty());</span>
+<span class="fc" id="L41">    }</span>
+
+    @Test
+    @DisplayName(&quot;R10 - Trying to get a list of users with a filled database should return a list with the right number and users&quot;)
+    void R10_getUsersForFullShouldReturnFilledList() {
+        // the third argument of User is the license plate, not an email
+<span class="fc" id="L47">        List&lt;User&gt; users = List.of(</span>
+                new User(&quot;Bob&quot;, UserType.STUDENT, &quot;BOB-123&quot;),
+                new User(&quot;Alice&quot;, UserType.STUDENT, &quot;ALICE-456&quot;),
+                new User(&quot;Grayson&quot;, UserType.EMPLOYEE, &quot;GRAY-789&quot;)
+        );
+<span class="fc" id="L52">        when(userRepository.findAll()).thenReturn(users);</span>
+
+        // assertEquals on lists already checks the size and every element in order
+<span class="fc" id="L55">        assertEquals(users, userService.getAllUsers());</span>
+<span class="fc" id="L56">    }</span>
+
+    @Test
+    @DisplayName(&quot;R10 - Trying to find a user who does exist should return that user&quot;)
+    void R10_getUserForExistingShouldReturnUser() {
+<span class="fc" id="L61">        User user = new User(&quot;Bob&quot;, UserType.STUDENT, PLATE);</span>
+<span class="fc" id="L62">        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));</span>
+
+<span class="fc" id="L64">        assertEquals(user, userService.getUser(USER_ID));</span>
+<span class="fc" id="L65">    }</span>
+
+    @Test
+    @DisplayName(&quot;R10 - Trying to find a user who doesn't exist should error&quot;)
+    void R10_getUserForMissingShouldError() {
+<span class="fc" id="L70">        when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());</span>
+
+<span class="pc" id="L72">        assertThrows(UserNotFoundException.class, () -&gt; userService.getUser(USER_ID));</span>
+<span class="fc" id="L73">    }</span>
+
+    @Test
+    @DisplayName(&quot;R10 - Trying to find a user by plate which does exist should return user&quot;)
+    void R10_getUserByPlateShouldReturnUser() {
+<span class="fc" id="L78">        User user = new User(&quot;Bob&quot;, UserType.STUDENT, PLATE);</span>
+<span class="fc" id="L79">        when(userRepository.findByLicensePlate(PLATE)).thenReturn(Optional.of(user));</span>
+
+<span class="fc" id="L81">        assertEquals(user, userService.findByLicensePlate(PLATE));</span>
+<span class="fc" id="L82">    }</span>
+
+    @Test
+    @DisplayName(&quot;R10 - Trying to find a user by plate which doesn't exist should error&quot;)
+    void R10_getUserByNonExistentPlateShouldError() {
+<span class="fc" id="L87">        when(userRepository.findByLicensePlate(PLATE)).thenReturn(Optional.empty());</span>
+
+<span class="pc" id="L89">        assertThrows(UserNotFoundException.class, () -&gt; userService.findByLicensePlate(PLATE));</span>
+<span class="fc" id="L90">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

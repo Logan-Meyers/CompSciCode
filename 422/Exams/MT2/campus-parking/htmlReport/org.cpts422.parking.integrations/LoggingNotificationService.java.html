@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LoggingNotificationService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Whole project Coverage Results</a> &gt; <a href="index.source.html" class="el_package">org.cpts422.parking.integrations</a> &gt; <span class="el_source">LoggingNotificationService.java</span></div><h1>LoggingNotificationService.java</h1><pre class="source lang-java linenums">package org.cpts422.parking.integrations;
+
+import org.cpts422.parking.entities.Citation;
+import org.cpts422.parking.entities.Permit;
+import org.cpts422.parking.entities.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
+/** Notification service that logs each message instead of sending it. */
+@Component
+<span class="fc" id="L12">public class LoggingNotificationService implements NotificationService {</span>
+
+<span class="fc" id="L14">    private static final Logger log = LoggerFactory.getLogger(LoggingNotificationService.class);</span>
+
+    @Override
+    public void sendPurchaseConfirmation(User user, Permit permit) {
+<span class="nc" id="L18">        log.info(&quot;Purchase confirmation to {}: {} permit, {} cents paid on {}&quot;,</span>
+<span class="nc" id="L19">                user.getName(), permit.getZone(), permit.getPricePaidCents(), permit.getPurchaseDate());</span>
+<span class="nc" id="L20">    }</span>
+
+    @Override
+    public void sendCitationNotice(User user, Citation citation) {
+<span class="nc" id="L24">        log.info(&quot;Citation notice to {}: fine of {} cents issued on {}&quot;,</span>
+<span class="nc" id="L25">                user.getName(), citation.getFineCents(), citation.getIssuedDate());</span>
+<span class="nc" id="L26">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

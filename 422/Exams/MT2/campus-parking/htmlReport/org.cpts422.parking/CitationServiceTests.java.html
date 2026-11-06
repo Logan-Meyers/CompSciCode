@@ -1,0 +1,254 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CitationServiceTests.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Whole project Coverage Results</a> &gt; <a href="index.source.html" class="el_package">org.cpts422.parking</a> &gt; <span class="el_source">CitationServiceTests.java</span></div><h1>CitationServiceTests.java</h1><pre class="source lang-java linenums">package org.cpts422.parking;
+
+import org.cpts422.parking.entities.Citation;
+import org.cpts422.parking.entities.User;
+import org.cpts422.parking.entities.UserType;
+import org.cpts422.parking.exceptions.CitationAlreadyPaidException;
+import org.cpts422.parking.exceptions.CitationNotFoundException;
+import org.cpts422.parking.exceptions.PaymentDeclinedException;
+import org.cpts422.parking.exceptions.UserNotFoundException;
+import org.cpts422.parking.integrations.DateProvider;
+import org.cpts422.parking.integrations.NotificationService;
+import org.cpts422.parking.integrations.PaymentGateway;
+import org.cpts422.parking.repositories.CitationRepository;
+import org.cpts422.parking.repositories.UserRepository;
+import org.cpts422.parking.services.CitationService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+<span class="fc" id="L43">public class CitationServiceTests {</span>
+
+    // the user and citation ids are different on purpose, so charging the wrong one gets caught
+    private static final long USER_ID = 1L;
+    private static final long CITATION_ID = 7L;
+<span class="fc" id="L48">    private static final LocalDate TODAY = LocalDate.of(2026, 10, 25);</span>
+
+    @Mock private UserRepository userRepository;
+    @Mock private CitationRepository citationRepository;
+    @Mock private PaymentGateway paymentGateway;
+    @Mock private NotificationService notificationService;
+    @Mock private DateProvider dateProvider;
+
+    @InjectMocks private CitationService citationService;
+
+    private User user;
+
+    @BeforeEach
+    void createUser() {
+<span class="fc" id="L62">        user = new User(&quot;Bob&quot;, UserType.STUDENT, &quot;BOB-123&quot;);</span>
+        // ids are normally given out by the database, so set it by hand
+<span class="fc" id="L64">        ReflectionTestUtils.setField(user, &quot;id&quot;, USER_ID);</span>
+<span class="fc" id="L65">    }</span>
+
+    // matches the one citation we expect to be saved: today's date, the right fine, and unpaid
+    private Citation citationMatching(int fineCents) {
+<span class="pc bpc" id="L69" title="1 of 2 branches missed.">        return argThat(citation -&gt; citation.getUser() == user</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">                &amp;&amp; TODAY.equals(citation.getIssuedDate())</span>
+<span class="pc bpc" id="L71" title="1 of 2 branches missed.">                &amp;&amp; citation.getFineCents() == fineCents</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">                &amp;&amp; !citation.isPaid());</span>
+    }
+
+    private Citation previousCitation(int fineCents, int daysAgo, boolean paid) {
+<span class="fc" id="L76">        Citation previous = new Citation(user, TODAY.minusDays(daysAgo), fineCents);</span>
+<span class="fc" id="L77">        previous.setPaid(paid);</span>
+<span class="fc" id="L78">        return previous;</span>
+    }
+
+    // everything issueCitation needs except the previous citations and the save
+    private void stubUserAndToday(List&lt;Citation&gt; previousCitations) {
+<span class="fc" id="L83">        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));</span>
+<span class="fc" id="L84">        when(dateProvider.today()).thenReturn(TODAY);</span>
+<span class="fc" id="L85">        when(citationRepository.findByUserId(USER_ID)).thenReturn(previousCitations);</span>
+<span class="fc" id="L86">    }</span>
+
+    /* ---------- R6, R7, R8 - Issuing a Citation ---------- */
+
+    @Test
+    @DisplayName(&quot;R7 - A user with no previous citation should get the first fine step&quot;)
+    void R7_firstCitationShouldBeFirstStep() {
+<span class="fc" id="L93">        Citation saved = new Citation(user, TODAY, 2500);</span>
+<span class="fc" id="L94">        stubUserAndToday(List.of());</span>
+<span class="fc" id="L95">        when(citationRepository.save(citationMatching(2500))).thenReturn(saved);</span>
+
+<span class="fc" id="L97">        Citation result = citationService.issueCitation(USER_ID);</span>
+
+<span class="fc" id="L99">        assertSame(saved, result);</span>
+<span class="fc" id="L100">        verify(citationRepository).save(citationMatching(2500));</span>
+<span class="fc" id="L101">    }</span>
+
+    @ParameterizedTest(name = &quot;R7 - previous fine {0} issued {1} days ago should give a fine of {2}&quot;)
+    @CsvSource({
+            &quot;2500,  15, 5000&quot;,   // 15 days is still &quot;15 days or fewer&quot;
+            &quot;2500,  1,  5000&quot;,
+            &quot;5000,  4,  10000&quot;,
+            &quot;10000, 5,  10000&quot;,  // already at the last step
+            &quot;2500,  16, 2500&quot;,   // 16 days is too long ago, back to the first step
+            &quot;10000, 16, 2500&quot;
+    })
+    void R7_repeatCitationShouldMoveByDaysSincePrevious(int previousFine, int daysAgo, int expectedFine) {
+<span class="fc" id="L113">        Citation saved = new Citation(user, TODAY, expectedFine);</span>
+<span class="fc" id="L114">        stubUserAndToday(List.of(previousCitation(previousFine, daysAgo, false)));</span>
+<span class="fc" id="L115">        when(citationRepository.save(citationMatching(expectedFine))).thenReturn(saved);</span>
+
+<span class="fc" id="L117">        Citation result = citationService.issueCitation(USER_ID);</span>
+
+<span class="fc" id="L119">        assertSame(saved, result);</span>
+<span class="fc" id="L120">        verify(citationRepository).save(citationMatching(expectedFine));</span>
+<span class="fc" id="L121">    }</span>
+
+    @Test
+    @DisplayName(&quot;R7 - A previous citation that was already paid should still raise the fine&quot;)
+    void R7_paidPreviousCitationShouldStillCount() {
+<span class="fc" id="L126">        Citation saved = new Citation(user, TODAY, 5000);</span>
+<span class="fc" id="L127">        stubUserAndToday(List.of(previousCitation(2500, 3, true)));</span>
+<span class="fc" id="L128">        when(citationRepository.save(citationMatching(5000))).thenReturn(saved);</span>
+
+<span class="fc" id="L130">        Citation result = citationService.issueCitation(USER_ID);</span>
+
+<span class="fc" id="L132">        assertSame(saved, result);</span>
+<span class="fc" id="L133">        verify(citationRepository).save(citationMatching(5000));</span>
+<span class="fc" id="L134">    }</span>
+
+    @Test
+    @DisplayName(&quot;R7 - Only the most recent previous citation should decide the fine when they are listed newest first&quot;)
+    void R7_mostRecentPreviousCitationShouldDecideFineWhenListedNewestFirst() {
+        // listed newest first: the newest is 2500 from 3 days ago, so the new fine is 5000
+        // if the older one (10000 from 10 days ago) was used by mistake, the fine would stay at 10000
+<span class="fc" id="L141">        Citation saved = new Citation(user, TODAY, 5000);</span>
+<span class="fc" id="L142">        stubUserAndToday(List.of(previousCitation(2500, 3, false), previousCitation(10000, 10, false)));</span>
+<span class="fc" id="L143">        when(citationRepository.save(citationMatching(5000))).thenReturn(saved);</span>
+
+<span class="fc" id="L145">        Citation result = citationService.issueCitation(USER_ID);</span>
+
+<span class="fc" id="L147">        assertSame(saved, result);</span>
+<span class="fc" id="L148">        verify(citationRepository).save(citationMatching(5000));</span>
+<span class="fc" id="L149">    }</span>
+
+    @Test
+    @DisplayName(&quot;R7 - Only the most recent previous citation should decide the fine when they are listed oldest first&quot;)
+    void R7_mostRecentPreviousCitationShouldDecideFineWhenListedOldestFirst() {
+        // same citations as the test above, in the opposite order: the loop has to swap out the older
+        // citation it saw first for the newer one (this is the isAfter == true branch)
+<span class="fc" id="L156">        Citation saved = new Citation(user, TODAY, 5000);</span>
+<span class="fc" id="L157">        stubUserAndToday(List.of(previousCitation(10000, 10, false), previousCitation(2500, 3, false)));</span>
+<span class="fc" id="L158">        when(citationRepository.save(citationMatching(5000))).thenReturn(saved);</span>
+
+<span class="fc" id="L160">        Citation result = citationService.issueCitation(USER_ID);</span>
+
+<span class="fc" id="L162">        assertSame(saved, result);</span>
+<span class="fc" id="L163">        verify(citationRepository).save(citationMatching(5000));</span>
+<span class="fc" id="L164">    }</span>
+
+    @Test
+    @DisplayName(&quot;R8 - A new citation should send a notice with the saved citation to the user&quot;)
+    void R8_issuedCitationShouldSendNoticeWithSavedCitation() {
+<span class="fc" id="L169">        Citation saved = new Citation(user, TODAY, 2500);</span>
+<span class="fc" id="L170">        stubUserAndToday(List.of());</span>
+<span class="fc" id="L171">        when(citationRepository.save(citationMatching(2500))).thenReturn(saved);</span>
+
+<span class="fc" id="L173">        citationService.issueCitation(USER_ID);</span>
+
+<span class="fc" id="L175">        verify(citationRepository).save(citationMatching(2500));</span>
+<span class="fc" id="L176">        verify(notificationService).sendCitationNotice(user, saved);</span>
+<span class="fc" id="L177">    }</span>
+
+    @Test
+    @DisplayName(&quot;R8 - Issuing a citation for a user that doesn't exist should error and save and send nothing&quot;)
+    void R8_missingUserShouldError() {
+<span class="fc" id="L182">        when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());</span>
+
+<span class="pc" id="L184">        assertThrows(UserNotFoundException.class, () -&gt; citationService.issueCitation(USER_ID));</span>
+
+<span class="fc" id="L186">        verifyNoInteractions(citationRepository, notificationService);</span>
+<span class="fc" id="L187">    }</span>
+
+    /* ---------- R9 - Paying a Citation ---------- */
+
+    @Test
+    @DisplayName(&quot;R9 - Paying a citation that doesn't exist should error and charge nothing&quot;)
+    void R9_unknownCitationShouldError() {
+<span class="fc" id="L194">        when(citationRepository.findById(CITATION_ID)).thenReturn(Optional.empty());</span>
+
+<span class="pc" id="L196">        assertThrows(CitationNotFoundException.class, () -&gt; citationService.payCitation(CITATION_ID));</span>
+
+<span class="fc" id="L198">        verifyNoInteractions(paymentGateway);</span>
+<span class="fc" id="L199">    }</span>
+
+    @Test
+    @DisplayName(&quot;R9 - Paying a citation that is already paid should error and charge nothing&quot;)
+    void R9_alreadyPaidCitationShouldError() {
+<span class="fc" id="L204">        Citation paid = previousCitation(2500, 3, true);</span>
+<span class="fc" id="L205">        when(citationRepository.findById(CITATION_ID)).thenReturn(Optional.of(paid));</span>
+
+<span class="pc" id="L207">        assertThrows(CitationAlreadyPaidException.class, () -&gt; citationService.payCitation(CITATION_ID));</span>
+
+<span class="fc" id="L209">        verifyNoInteractions(paymentGateway);</span>
+<span class="fc" id="L210">        verify(citationRepository, never()).save(paid);</span>
+<span class="fc" id="L211">    }</span>
+
+    @Test
+    @DisplayName(&quot;R9 - An approved charge should charge the citation's user its fine, then mark it paid, save it and return it&quot;)
+    void R9_approvedChargeShouldMarkPaidSaveAndReturn() {
+<span class="fc" id="L216">        Citation citation = previousCitation(5000, 3, false);</span>
+<span class="fc" id="L217">        when(citationRepository.findById(CITATION_ID)).thenReturn(Optional.of(citation));</span>
+<span class="fc" id="L218">        when(paymentGateway.charge(USER_ID, 5000)).thenReturn(true);</span>
+<span class="fc" id="L219">        when(citationRepository.save(citation)).thenReturn(citation);</span>
+
+<span class="fc" id="L221">        Citation result = citationService.payCitation(CITATION_ID);</span>
+
+<span class="fc" id="L223">        assertSame(citation, result);</span>
+<span class="fc" id="L224">        assertTrue(result.isPaid());</span>
+<span class="fc" id="L225">        verify(paymentGateway).charge(USER_ID, 5000);</span>
+<span class="fc" id="L226">        verify(citationRepository).save(citation);</span>
+<span class="fc" id="L227">    }</span>
+
+    @Test
+    @DisplayName(&quot;R9 - A declined charge should error, leave the citation unpaid and not save it&quot;)
+    void R9_declinedChargeShouldLeaveCitationUnpaid() {
+<span class="fc" id="L232">        Citation citation = previousCitation(5000, 3, false);</span>
+<span class="fc" id="L233">        when(citationRepository.findById(CITATION_ID)).thenReturn(Optional.of(citation));</span>
+<span class="fc" id="L234">        when(paymentGateway.charge(USER_ID, 5000)).thenReturn(false);</span>
+
+<span class="pc" id="L236">        assertThrows(PaymentDeclinedException.class, () -&gt; citationService.payCitation(CITATION_ID));</span>
+
+<span class="fc" id="L238">        assertFalse(citation.isPaid());</span>
+<span class="fc" id="L239">        verify(paymentGateway).charge(USER_ID, 5000);</span>
+<span class="fc" id="L240">        verify(citationRepository, never()).save(citation);</span>
+<span class="fc" id="L241">    }</span>
+
+    /* ---------- R12 - Finding a User's Citations ---------- */
+
+    @Test
+    @DisplayName(&quot;R12 - Getting a user's citations should return both the paid and the unpaid ones&quot;)
+    void R12_userCitationsShouldIncludePaidAndUnpaid() {
+<span class="fc" id="L248">        List&lt;Citation&gt; citations = List.of(previousCitation(2500, 20, true), previousCitation(2500, 3, false));</span>
+<span class="fc" id="L249">        when(citationRepository.findByUserId(USER_ID)).thenReturn(citations);</span>
+
+<span class="fc" id="L251">        assertEquals(citations, citationService.findCitationsForUser(USER_ID));</span>
+<span class="fc" id="L252">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

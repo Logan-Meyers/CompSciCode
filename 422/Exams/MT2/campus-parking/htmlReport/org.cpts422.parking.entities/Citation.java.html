@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Citation.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Whole project Coverage Results</a> &gt; <a href="index.source.html" class="el_package">org.cpts422.parking.entities</a> &gt; <span class="el_source">Citation.java</span></div><h1>Citation.java</h1><pre class="source lang-java linenums">package org.cpts422.parking.entities;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.ManyToOne;
+
+import java.time.LocalDate;
+
+/** A parking citation issued to one user; starts unpaid (R8) and is marked paid by R9. */
+@Entity
+public class Citation {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    private User user;
+
+    @Column(nullable = false)
+    private LocalDate issuedDate;
+
+    @Column(nullable = false)
+    private int fineCents;
+
+    @Column(nullable = false)
+    private boolean paid;
+
+<span class="fc" id="L33">    protected Citation() {</span>
+<span class="fc" id="L34">    }</span>
+
+<span class="fc" id="L36">    public Citation(User user, LocalDate issuedDate, int fineCents) {</span>
+<span class="fc" id="L37">        this.user = user;</span>
+<span class="fc" id="L38">        this.issuedDate = issuedDate;</span>
+<span class="fc" id="L39">        this.fineCents = fineCents;</span>
+<span class="fc" id="L40">        this.paid = false;</span>
+<span class="fc" id="L41">    }</span>
+
+    public Long getId() {
+<span class="fc" id="L44">        return id;</span>
+    }
+
+    public User getUser() {
+<span class="fc" id="L48">        return user;</span>
+    }
+
+    public LocalDate getIssuedDate() {
+<span class="fc" id="L52">        return issuedDate;</span>
+    }
+
+    public int getFineCents() {
+<span class="fc" id="L56">        return fineCents;</span>
+    }
+
+    public boolean isPaid() {
+<span class="fc" id="L60">        return paid;</span>
+    }
+
+    public void setPaid(boolean paid) {
+<span class="fc" id="L64">        this.paid = paid;</span>
+<span class="fc" id="L65">    }</span>
+
+    @Override
+    public String toString() {
+<span class="nc" id="L69">        return &quot;Citation{id=&quot; + id + &quot;, userId=&quot; + user.getId() + &quot;, issuedDate=&quot; + issuedDate</span>
+                + &quot;, fineCents=&quot; + fineCents + &quot;, paid=&quot; + paid + &quot;}&quot;;
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

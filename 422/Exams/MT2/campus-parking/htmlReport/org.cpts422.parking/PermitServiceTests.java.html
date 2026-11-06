@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PermitServiceTests.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Whole project Coverage Results</a> &gt; <a href="index.source.html" class="el_package">org.cpts422.parking</a> &gt; <span class="el_source">PermitServiceTests.java</span></div><h1>PermitServiceTests.java</h1><pre class="source lang-java linenums">package org.cpts422.parking;
+
+import org.cpts422.parking.entities.Citation;
+import org.cpts422.parking.entities.Permit;
+import org.cpts422.parking.entities.User;
+import org.cpts422.parking.entities.UserType;
+import org.cpts422.parking.entities.Zone;
+import org.cpts422.parking.exceptions.PaymentDeclinedException;
+import org.cpts422.parking.exceptions.PermitNotAllowedException;
+import org.cpts422.parking.exceptions.UserNotFoundException;
+import org.cpts422.parking.integrations.DateProvider;
+import org.cpts422.parking.integrations.NotificationService;
+import org.cpts422.parking.integrations.PaymentGateway;
+import org.cpts422.parking.repositories.CitationRepository;
+import org.cpts422.parking.repositories.PermitRepository;
+import org.cpts422.parking.repositories.UserRepository;
+import org.cpts422.parking.services.PermitService;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+<span class="fc" id="L41">public class PermitServiceTests {</span>
+
+    private static final long USER_ID = 1L;
+<span class="fc" id="L44">    private static final LocalDate TODAY = LocalDate.of(2026, 11, 3);</span>
+
+    // PermitService takes all of these through its constructor, so they all have to be here
+    // even though the R11 tests only use the permit repository
+    @Mock private UserRepository userRepository;
+    @Mock private PermitRepository permitRepository;
+    @Mock private CitationRepository citationRepository;
+    @Mock private PaymentGateway paymentGateway;
+    @Mock private NotificationService notificationService;
+    @Mock private DateProvider dateProvider;
+
+    @InjectMocks private PermitService permitService;
+
+    // real objects instead of mocks: Permit is just data, and Zone is an enum (nothing to mock)
+    private static Permit permitFor(Zone zone, int priceCents) {
+<span class="fc" id="L59">        User student = new User(&quot;Bob&quot;, UserType.STUDENT, &quot;BOB-123&quot;);</span>
+<span class="fc" id="L60">        return new Permit(student, zone, priceCents, TODAY);</span>
+    }
+
+    // matches the one permit we expect to be saved, field by field (Permit has no equals())
+    private static Permit permitMatching(User user, Zone zone, int priceCents) {
+<span class="pc bpc" id="L65" title="1 of 2 branches missed.">        return argThat(permit -&gt; permit.getUser() == user</span>
+<span class="pc bpc" id="L66" title="1 of 2 branches missed.">                &amp;&amp; permit.getZone() == zone</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">                &amp;&amp; permit.getPricePaidCents() == priceCents</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">                &amp;&amp; TODAY.equals(permit.getPurchaseDate()));</span>
+    }
+
+    // a user who passes checks 1, 3 and 4: exists, no permit, no citations
+    private void stubUserWithNoPermitAndNoCitations(User user) {
+<span class="fc" id="L73">        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));</span>
+<span class="fc" id="L74">        when(permitRepository.findByUserId(USER_ID)).thenReturn(List.of());</span>
+<span class="fc" id="L75">        when(citationRepository.findByUserId(USER_ID)).thenReturn(List.of());</span>
+<span class="fc" id="L76">    }</span>
+
+    /* ---------- R1 - Zones and Prices ---------- */
+
+    @ParameterizedTest(name = &quot;R1 - {0} buying {1} should be charged {2} cents and get that permit&quot;)
+    @CsvSource({
+            &quot;STUDENT,  GREEN, 6000&quot;,
+            &quot;STUDENT,  BLUE,  18000&quot;,
+            &quot;EMPLOYEE, GREEN, 9000&quot;,
+            &quot;EMPLOYEE, RED,   24000&quot;
+    })
+    void R1_allowedZoneShouldChargeFixedPriceForType(UserType type, Zone zone, int priceCents) {
+        // Setup: an eligible user, an approved charge, and the permit the repository will hand back
+<span class="fc" id="L89">        User user = new User(&quot;Bob&quot;, type, &quot;BOB-123&quot;);</span>
+<span class="fc" id="L90">        Permit saved = new Permit(user, zone, priceCents, TODAY);</span>
+<span class="fc" id="L91">        stubUserWithNoPermitAndNoCitations(user);</span>
+<span class="fc" id="L92">        when(dateProvider.today()).thenReturn(TODAY);</span>
+<span class="fc" id="L93">        when(paymentGateway.charge(USER_ID, priceCents)).thenReturn(true);</span>
+<span class="fc" id="L94">        when(permitRepository.save(permitMatching(user, zone, priceCents))).thenReturn(saved);</span>
+
+        // Act
+<span class="fc" id="L97">        Permit result = permitService.purchasePermit(USER_ID, zone);</span>
+
+        // Assert: the saved permit comes back, and the card was charged that price before it was saved
+<span class="fc" id="L100">        assertEquals(saved, result);</span>
+<span class="fc" id="L101">        verify(paymentGateway).charge(USER_ID, priceCents);</span>
+<span class="fc" id="L102">        verify(permitRepository).save(permitMatching(user, zone, priceCents));</span>
+<span class="fc" id="L103">    }</span>
+
+    @ParameterizedTest(name = &quot;R1 - {0} buying {1} should be refused and charge nothing&quot;)
+    @CsvSource({
+            &quot;STUDENT,  RED&quot;,
+            &quot;EMPLOYEE, BLUE&quot;
+    })
+    void R1_disallowedZoneShouldBeRefused(UserType type, Zone zone) {
+<span class="fc" id="L111">        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(new User(&quot;Bob&quot;, type, &quot;BOB-123&quot;)));</span>
+
+<span class="pc" id="L113">        assertThrows(PermitNotAllowedException.class, () -&gt; permitService.purchasePermit(USER_ID, zone));</span>
+
+<span class="fc" id="L115">        verifyNoInteractions(permitRepository, citationRepository, paymentGateway, notificationService);</span>
+<span class="fc" id="L116">    }</span>
+
+    /* ---------- R2 - One Permit ---------- */
+
+    @Test
+    @DisplayName(&quot;R2 - A user who already holds a permit should be refused, charged nothing, and sent nothing&quot;)
+    void R2_userWithExistingPermitShouldBeRefused() {
+<span class="fc" id="L123">        User user = new User(&quot;Bob&quot;, UserType.STUDENT, &quot;BOB-123&quot;);</span>
+<span class="fc" id="L124">        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));</span>
+<span class="fc" id="L125">        when(permitRepository.findByUserId(USER_ID)).thenReturn(List.of(permitFor(Zone.GREEN, 6000)));</span>
+
+<span class="pc" id="L127">        assertThrows(PermitNotAllowedException.class, () -&gt; permitService.purchasePermit(USER_ID, Zone.BLUE));</span>
+
+<span class="fc" id="L129">        verify(permitRepository, never()).save(permitMatching(user, Zone.BLUE, 18000));</span>
+<span class="fc" id="L130">        verifyNoInteractions(paymentGateway, notificationService);</span>
+<span class="fc" id="L131">    }</span>
+
+    /* ---------- R3 - Unpaid Citations Block a Purchase ---------- */
+
+    @Test
+    @DisplayName(&quot;R3 - A user with an unpaid citation should be refused before being charged&quot;)
+    void R3_userWithUnpaidCitationShouldBeRefused() {
+<span class="fc" id="L138">        User user = new User(&quot;Bob&quot;, UserType.STUDENT, &quot;BOB-123&quot;);</span>
+<span class="fc" id="L139">        Citation paid = new Citation(user, TODAY.minusDays(30), 2500);</span>
+<span class="fc" id="L140">        paid.setPaid(true);</span>
+<span class="fc" id="L141">        Citation unpaid = new Citation(user, TODAY.minusDays(2), 2500);</span>
+<span class="fc" id="L142">        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));</span>
+<span class="fc" id="L143">        when(permitRepository.findByUserId(USER_ID)).thenReturn(List.of());</span>
+<span class="fc" id="L144">        when(citationRepository.findByUserId(USER_ID)).thenReturn(List.of(paid, unpaid));</span>
+
+<span class="pc" id="L146">        assertThrows(PermitNotAllowedException.class, () -&gt; permitService.purchasePermit(USER_ID, Zone.GREEN));</span>
+
+<span class="fc" id="L148">        verify(permitRepository, never()).save(permitMatching(user, Zone.GREEN, 6000));</span>
+<span class="fc" id="L149">        verifyNoInteractions(paymentGateway, notificationService);</span>
+<span class="fc" id="L150">    }</span>
+
+    @Test
+    @DisplayName(&quot;R3 - A user whose citations are all paid should be able to buy a permit&quot;)
+    void R3_userWithOnlyPaidCitationsShouldBeAllowed() {
+<span class="fc" id="L155">        User user = new User(&quot;Bob&quot;, UserType.STUDENT, &quot;BOB-123&quot;);</span>
+<span class="fc" id="L156">        Citation paid = new Citation(user, TODAY.minusDays(30), 2500);</span>
+<span class="fc" id="L157">        paid.setPaid(true);</span>
+<span class="fc" id="L158">        Permit saved = new Permit(user, Zone.GREEN, 6000, TODAY);</span>
+<span class="fc" id="L159">        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));</span>
+<span class="fc" id="L160">        when(permitRepository.findByUserId(USER_ID)).thenReturn(List.of());</span>
+<span class="fc" id="L161">        when(citationRepository.findByUserId(USER_ID)).thenReturn(List.of(paid));</span>
+<span class="fc" id="L162">        when(dateProvider.today()).thenReturn(TODAY);</span>
+<span class="fc" id="L163">        when(paymentGateway.charge(USER_ID, 6000)).thenReturn(true);</span>
+<span class="fc" id="L164">        when(permitRepository.save(permitMatching(user, Zone.GREEN, 6000))).thenReturn(saved);</span>
+
+<span class="fc" id="L166">        Permit result = permitService.purchasePermit(USER_ID, Zone.GREEN);</span>
+
+<span class="fc" id="L168">        assertEquals(saved, result);</span>
+<span class="fc" id="L169">        verify(paymentGateway).charge(USER_ID, 6000);</span>
+<span class="fc" id="L170">        verify(permitRepository).save(permitMatching(user, Zone.GREEN, 6000));</span>
+<span class="fc" id="L171">    }</span>
+
+    /* ---------- R4 - Order of Checks ---------- */
+
+    @Test
+    @DisplayName(&quot;R4 - A user that doesn't exist should be refused before anything else is checked&quot;)
+    void R4_missingUserShouldBeCheckedFirst() {
+<span class="fc" id="L178">        when(userRepository.findById(USER_ID)).thenReturn(Optional.empty());</span>
+
+<span class="pc" id="L180">        assertThrows(UserNotFoundException.class, () -&gt; permitService.purchasePermit(USER_ID, Zone.GREEN));</span>
+
+<span class="fc" id="L182">        verifyNoInteractions(permitRepository, citationRepository, paymentGateway, notificationService);</span>
+<span class="fc" id="L183">    }</span>
+
+    @Test
+    @DisplayName(&quot;R4 - A student with an unpaid citation asking for RED should fail on the zone, never looking at citations&quot;)
+    void R4_zoneShouldBeCheckedBeforeCitations() {
+        // both exceptions are PermitNotAllowedException, so the untouched repositories are what prove the order
+<span class="fc" id="L189">        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(new User(&quot;Bob&quot;, UserType.STUDENT, &quot;BOB-123&quot;)));</span>
+
+<span class="pc" id="L191">        assertThrows(PermitNotAllowedException.class, () -&gt; permitService.purchasePermit(USER_ID, Zone.RED));</span>
+
+<span class="fc" id="L193">        verifyNoInteractions(permitRepository, citationRepository, paymentGateway, notificationService);</span>
+<span class="fc" id="L194">    }</span>
+
+    @Test
+    @DisplayName(&quot;R4 - A user with a permit and an unpaid citation should fail on the permit, never looking at citations&quot;)
+    void R4_existingPermitShouldBeCheckedBeforeCitations() {
+<span class="fc" id="L199">        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(new User(&quot;Bob&quot;, UserType.STUDENT, &quot;BOB-123&quot;)));</span>
+<span class="fc" id="L200">        when(permitRepository.findByUserId(USER_ID)).thenReturn(List.of(permitFor(Zone.GREEN, 6000)));</span>
+
+<span class="pc" id="L202">        assertThrows(PermitNotAllowedException.class, () -&gt; permitService.purchasePermit(USER_ID, Zone.BLUE));</span>
+
+<span class="fc" id="L204">        verifyNoInteractions(citationRepository, paymentGateway, notificationService);</span>
+<span class="fc" id="L205">    }</span>
+
+    /* ---------- R5 - Payment and Confirmation ---------- */
+
+    @Test
+    @DisplayName(&quot;R5 - An approved charge should save the permit, send a confirmation with it, and return it&quot;)
+    void R5_approvedChargeShouldSaveSendAndReturnPermit() {
+<span class="fc" id="L212">        User user = new User(&quot;Bob&quot;, UserType.STUDENT, &quot;BOB-123&quot;);</span>
+<span class="fc" id="L213">        Permit saved = new Permit(user, Zone.BLUE, 18000, TODAY);</span>
+<span class="fc" id="L214">        stubUserWithNoPermitAndNoCitations(user);</span>
+<span class="fc" id="L215">        when(dateProvider.today()).thenReturn(TODAY);</span>
+<span class="fc" id="L216">        when(paymentGateway.charge(USER_ID, 18000)).thenReturn(true);</span>
+<span class="fc" id="L217">        when(permitRepository.save(permitMatching(user, Zone.BLUE, 18000))).thenReturn(saved);</span>
+
+<span class="fc" id="L219">        Permit result = permitService.purchasePermit(USER_ID, Zone.BLUE);</span>
+
+<span class="fc" id="L221">        assertEquals(saved, result);</span>
+<span class="fc" id="L222">        verify(paymentGateway).charge(USER_ID, 18000);</span>
+<span class="fc" id="L223">        verify(permitRepository).save(permitMatching(user, Zone.BLUE, 18000));</span>
+<span class="fc" id="L224">        verify(notificationService).sendPurchaseConfirmation(user, saved);</span>
+<span class="fc" id="L225">    }</span>
+
+    @Test
+    @DisplayName(&quot;R5 - A declined charge should throw and save no permit and send no confirmation&quot;)
+    void R5_declinedChargeShouldNotSaveOrSend() {
+<span class="fc" id="L230">        User user = new User(&quot;Bob&quot;, UserType.STUDENT, &quot;BOB-123&quot;);</span>
+<span class="fc" id="L231">        stubUserWithNoPermitAndNoCitations(user);</span>
+<span class="fc" id="L232">        when(paymentGateway.charge(USER_ID, 6000)).thenReturn(false);</span>
+
+<span class="pc" id="L234">        assertThrows(PaymentDeclinedException.class, () -&gt; permitService.purchasePermit(USER_ID, Zone.GREEN));</span>
+
+<span class="fc" id="L236">        verify(paymentGateway).charge(USER_ID, 6000);</span>
+<span class="fc" id="L237">        verify(permitRepository, never()).save(permitMatching(user, Zone.GREEN, 6000));</span>
+<span class="fc" id="L238">        verifyNoInteractions(notificationService);</span>
+<span class="fc" id="L239">    }</span>
+
+    /* ---------- R11 - Finding User's Permit ---------- */
+
+    @Test
+    @DisplayName(&quot;R11 - Trying to get a user's permit when they have none should return empty&quot;)
+    void R11_getUserPermitForUserWithNoPermitShouldReturnEmpty() {
+<span class="fc" id="L246">        when(permitRepository.findByUserId(USER_ID)).thenReturn(List.of());</span>
+
+<span class="fc" id="L248">        assertTrue(permitService.findPermitForUser(USER_ID).isEmpty());</span>
+<span class="fc" id="L249">    }</span>
+
+    @Test
+    @DisplayName(&quot;R11 - Trying to get a user's permit when they have one should return that one permit&quot;)
+    void R11_getUserPermitForUserWithOnePermitShouldReturnOnePermit() {
+<span class="fc" id="L254">        Permit permit = permitFor(Zone.GREEN, 6000);</span>
+<span class="fc" id="L255">        when(permitRepository.findByUserId(USER_ID)).thenReturn(List.of(permit));</span>
+
+<span class="fc" id="L257">        assertEquals(Optional.of(permit), permitService.findPermitForUser(USER_ID));</span>
+<span class="fc" id="L258">    }</span>
+
+    @Test
+    @DisplayName(&quot;R11 - Trying to get a user's permit when they have two should return the first permit&quot;)
+    void R11_getUserPermitForUserWithTwoPermitsShouldReturnFirstPermit() {
+<span class="fc" id="L263">        Permit first = permitFor(Zone.GREEN, 6000);</span>
+<span class="fc" id="L264">        Permit second = permitFor(Zone.BLUE, 18000);</span>
+<span class="fc" id="L265">        when(permitRepository.findByUserId(USER_ID)).thenReturn(List.of(first, second));</span>
+
+        // Optional.equals compares the permit with equals(), which is identity here,
+        // so this also proves it's the first one and not the second one
+<span class="fc" id="L269">        assertEquals(Optional.of(first), permitService.findPermitForUser(USER_ID));</span>
+<span class="fc" id="L270">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

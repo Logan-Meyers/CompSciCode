@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>InitialSetup.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Whole project Coverage Results</a> &gt; <a href="index.source.html" class="el_package">org.cpts422.parking.setup</a> &gt; <span class="el_source">InitialSetup.java</span></div><h1>InitialSetup.java</h1><pre class="source lang-java linenums">package org.cpts422.parking.setup;
+
+import java.time.LocalDate;
+
+import org.cpts422.parking.entities.Citation;
+import org.cpts422.parking.entities.Permit;
+import org.cpts422.parking.entities.User;
+import org.cpts422.parking.entities.UserType;
+import org.cpts422.parking.entities.Zone;
+import org.cpts422.parking.integrations.DateProvider;
+import org.cpts422.parking.repositories.CitationRepository;
+import org.cpts422.parking.repositories.PermitRepository;
+import org.cpts422.parking.repositories.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
+
+/** Loads the four sample users, with their sample permit and citation, at startup. */
+@Component
+public class InitialSetup implements CommandLineRunner {
+
+<span class="fc" id="L23">    private static final Logger log = LoggerFactory.getLogger(InitialSetup.class);</span>
+
+    private final UserRepository userRepository;
+    private final PermitRepository permitRepository;
+    private final CitationRepository citationRepository;
+    private final DateProvider dateProvider;
+
+    public InitialSetup(UserRepository userRepository,
+                        PermitRepository permitRepository,
+                        CitationRepository citationRepository,
+<span class="fc" id="L33">                        DateProvider dateProvider) {</span>
+<span class="fc" id="L34">        this.userRepository = userRepository;</span>
+<span class="fc" id="L35">        this.permitRepository = permitRepository;</span>
+<span class="fc" id="L36">        this.citationRepository = citationRepository;</span>
+<span class="fc" id="L37">        this.dateProvider = dateProvider;</span>
+<span class="fc" id="L38">    }</span>
+
+    @Override
+    public void run(String... args) {
+<span class="fc" id="L42">        LocalDate today = dateProvider.today();</span>
+
+<span class="fc" id="L44">        User alex = userRepository.save(new User(&quot;Alex Rivera&quot;, UserType.STUDENT, &quot;CPK1001&quot;));</span>
+<span class="fc" id="L45">        log.info(&quot;Saved user id={} name={} type={} plate={} permits=0 citations=0&quot;,</span>
+<span class="fc" id="L46">                alex.getId(), alex.getName(), alex.getType(), alex.getLicensePlate());</span>
+
+<span class="fc" id="L48">        User jordan = userRepository.save(new User(&quot;Jordan Lee&quot;, UserType.STUDENT, &quot;CPK1002&quot;));</span>
+<span class="fc" id="L49">        citationRepository.save(new Citation(jordan, today.minusDays(10), 2500));</span>
+<span class="fc" id="L50">        log.info(&quot;Saved user id={} name={} type={} plate={} permits=0 citations=1&quot;,</span>
+<span class="fc" id="L51">                jordan.getId(), jordan.getName(), jordan.getType(), jordan.getLicensePlate());</span>
+
+<span class="fc" id="L53">        User priya = userRepository.save(new User(&quot;Priya Shah&quot;, UserType.EMPLOYEE, &quot;CPK2001&quot;));</span>
+<span class="fc" id="L54">        permitRepository.save(new Permit(priya, Zone.RED, 24000, today.minusDays(30)));</span>
+<span class="fc" id="L55">        log.info(&quot;Saved user id={} name={} type={} plate={} permits=1 citations=0&quot;,</span>
+<span class="fc" id="L56">                priya.getId(), priya.getName(), priya.getType(), priya.getLicensePlate());</span>
+
+<span class="fc" id="L58">        User sam = userRepository.save(new User(&quot;Sam Carter&quot;, UserType.EMPLOYEE, &quot;CPK2002&quot;));</span>
+<span class="fc" id="L59">        log.info(&quot;Saved user id={} name={} type={} plate={} permits=0 citations=0&quot;,</span>
+<span class="fc" id="L60">                sam.getId(), sam.getName(), sam.getType(), sam.getLicensePlate());</span>
+<span class="fc" id="L61">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>

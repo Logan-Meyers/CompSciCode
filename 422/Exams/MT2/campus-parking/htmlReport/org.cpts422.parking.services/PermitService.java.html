@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PermitService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">Whole project Coverage Results</a> &gt; <a href="index.source.html" class="el_package">org.cpts422.parking.services</a> &gt; <span class="el_source">PermitService.java</span></div><h1>PermitService.java</h1><pre class="source lang-java linenums">package org.cpts422.parking.services;
+
+import java.util.Optional;
+
+import org.cpts422.parking.entities.Citation;
+import org.cpts422.parking.entities.Permit;
+import org.cpts422.parking.entities.User;
+import org.cpts422.parking.entities.UserType;
+import org.cpts422.parking.entities.Zone;
+import org.cpts422.parking.exceptions.PaymentDeclinedException;
+import org.cpts422.parking.exceptions.PermitNotAllowedException;
+import org.cpts422.parking.exceptions.UserNotFoundException;
+import org.cpts422.parking.integrations.DateProvider;
+import org.cpts422.parking.integrations.NotificationService;
+import org.cpts422.parking.integrations.PaymentGateway;
+import org.cpts422.parking.repositories.CitationRepository;
+import org.cpts422.parking.repositories.PermitRepository;
+import org.cpts422.parking.repositories.UserRepository;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+/** Sells parking permits. */
+@Service
+public class PermitService {
+
+    private final UserRepository userRepository;
+    private final PermitRepository permitRepository;
+    private final CitationRepository citationRepository;
+    private final PaymentGateway paymentGateway;
+    private final NotificationService notificationService;
+    private final DateProvider dateProvider;
+
+    public PermitService(UserRepository userRepository,
+                         PermitRepository permitRepository,
+                         CitationRepository citationRepository,
+                         PaymentGateway paymentGateway,
+                         NotificationService notificationService,
+<span class="fc" id="L38">                         DateProvider dateProvider) {</span>
+<span class="fc" id="L39">        this.userRepository = userRepository;</span>
+<span class="fc" id="L40">        this.permitRepository = permitRepository;</span>
+<span class="fc" id="L41">        this.citationRepository = citationRepository;</span>
+<span class="fc" id="L42">        this.paymentGateway = paymentGateway;</span>
+<span class="fc" id="L43">        this.notificationService = notificationService;</span>
+<span class="fc" id="L44">        this.dateProvider = dateProvider;</span>
+<span class="fc" id="L45">    }</span>
+
+    /** Applies R1 to R5, with the checks in the R4 order. */
+    @Transactional
+    public Permit purchasePermit(Long userId, Zone zone) {
+<span class="fc" id="L50">        User user = userRepository.findById(userId)</span>
+<span class="fc" id="L51">                .orElseThrow(() -&gt; new UserNotFoundException(&quot;R4: user not found: id &quot; + userId));</span>
+
+<span class="fc" id="L53">        int price = priceForOrThrow(user, userId, zone);</span>
+
+<span class="fc bfc" id="L55" title="All 2 branches covered.">        if (!permitRepository.findByUserId(userId).isEmpty()) {</span>
+<span class="fc" id="L56">            throw new PermitNotAllowedException(&quot;R2: user &quot; + userId + &quot; already holds a permit&quot;);</span>
+        }
+
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        for (Citation citation : citationRepository.findByUserId(userId)) {</span>
+<span class="fc bfc" id="L60" title="All 2 branches covered.">            if (!citation.isPaid()) {</span>
+<span class="fc" id="L61">                throw new PermitNotAllowedException(</span>
+<span class="fc" id="L62">                        &quot;R3: user &quot; + userId + &quot; has unpaid citation &quot; + citation.getId());</span>
+            }
+<span class="fc" id="L64">        }</span>
+
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        if (!paymentGateway.charge(userId, price)) {</span>
+<span class="fc" id="L67">            throw new PaymentDeclinedException(</span>
+                    &quot;R5: charge of &quot; + price + &quot; cents declined for user &quot; + userId);
+        }
+
+<span class="fc" id="L71">        Permit permit = permitRepository.save(new Permit(user, zone, price, dateProvider.today()));</span>
+<span class="fc" id="L72">        notificationService.sendPurchaseConfirmation(user, permit);</span>
+<span class="fc" id="L73">        return permit;</span>
+    }
+
+    /** Applies R1: returns the fixed price in cents for the user's type and the zone, or throws if the zone isn't allowed. */
+    private int priceForOrThrow(User user, Long userId, Zone zone) {
+<span class="fc bfc" id="L78" title="All 4 branches covered.">        if (user.getType() == UserType.STUDENT &amp;&amp; zone == Zone.GREEN) {</span>
+<span class="fc" id="L79">            return 6000;</span>
+<span class="fc bfc" id="L80" title="All 4 branches covered.">        } else if (user.getType() == UserType.STUDENT &amp;&amp; zone == Zone.BLUE) {</span>
+<span class="fc" id="L81">            return 18000;</span>
+<span class="fc bfc" id="L82" title="All 4 branches covered.">        } else if (user.getType() == UserType.EMPLOYEE &amp;&amp; zone == Zone.GREEN) {</span>
+<span class="fc" id="L83">            return 9000;</span>
+<span class="fc bfc" id="L84" title="All 4 branches covered.">        } else if (user.getType() == UserType.EMPLOYEE &amp;&amp; zone == Zone.RED) {</span>
+<span class="fc" id="L85">            return 24000;</span>
+        }
+<span class="fc" id="L87">        throw new PermitNotAllowedException(</span>
+<span class="fc" id="L88">                &quot;R1: zone &quot; + zone + &quot; is not allowed for &quot; + user.getType() + &quot; (user &quot; + userId + &quot;)&quot;);</span>
+    }
+
+    /** Returns the user's permit, if any. */
+    @Transactional
+    public Optional&lt;Permit&gt; findPermitForUser(Long userId) {
+<span class="fc" id="L94">        return permitRepository.findByUserId(userId).stream().findFirst();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.15.202606040825</span></div></body></html>
